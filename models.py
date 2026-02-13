@@ -84,7 +84,7 @@ class Usuario(db.Model):
 
     def generar_codigo_recuperacion(self):
         self.codigo_recuperacion = secrets.token_hex(3).upper()
-        self.codigo_recuperacion = datetime.utcnow() + timedelta(minutes=15)
+        self.codigo_recuperacion_expiracion = datetime.utcnow() + timedelta(minutes=15)
         return self.codigo_recuperacion
 
     def validar_codigo_recuperacion(self, codigo):
