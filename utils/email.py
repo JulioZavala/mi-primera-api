@@ -215,6 +215,7 @@ def send_password_recovery_email(email, nombre, codigo):
     """
     return send_email(email, subject, template)
 
+
 def send_password_changed_email(email, nombre):
     email = "jz.ai.test@gmail.com"
     subject = "Tu contraseña ha sido actualizada - TODO App"
@@ -244,11 +245,6 @@ def send_password_changed_email(email, nombre):
             padding: 30px;
             border-radius: 0 0 5px 5px;
             }}
-            .success-icon {{
-            font-size: 48px;
-            text-align: center;
-            margin: 10px 0;
-            }}
             .footer {{
             text-align: center;
             margin-top: 20px;
@@ -263,7 +259,6 @@ def send_password_changed_email(email, nombre):
             <h1>Contraseña actualizada</h1>
             </div>
             <div class="content">
-            <div class="success-icon">✅</div>
             <p>Hola, {nombre}</p>
             <p>Te informamos que la contraseña de tu cuenta en <strong>TODO App</strong> ha sido cambiada exitosamente.</p>
             <p>Ya puedes iniciar sesión con tu nueva clave. Si tú realizaste este cambio, no es necesario que hagas nada más.</p>
