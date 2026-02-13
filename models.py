@@ -4,12 +4,10 @@ table: tareas
 """
 
 # from flask_sqlalchemy import SQLAlchemy
-from datetime import datetime, timezone, timedelta
+import secrets
+from datetime import datetime, timedelta, timezone
 
 from extensions import db
-import random
-import string
-import secrets
 
 # Crear la instalcia a la base de datos
 # db = data base
@@ -35,6 +33,10 @@ class Usuario(db.Model):
     codigo_verificacion = db.Column(db.String(6))
     codigo_expiracion = db.Column(db.DateTime)
 
+    # recuperacion de contraseña
+    codigo_recuperacion = db.Column(db.String(6))
+    codigo_recuperacion_expiracion = db.Column(db.DateTime)
+
     created_at = db.Column(db.DateTime, default=datetime.now(timezone.utc))
     # relacion entre usuario y tareas
     tareas = db.relationship("Tarea", backref="usuario", lazy=True)
@@ -51,7 +53,7 @@ class Usuario(db.Model):
             data["tareas"] = [tarea.to_dict() for tarea in self.tareas]
             data["total_tarea"] = len(self.tareas)
         return data
-    
+
     def generar_codigo_verificacion(self):
         """
         genera un codigo de verificacion de 6 caracteres
@@ -62,7 +64,7 @@ class Usuario(db.Model):
         # self.codigo_expiracion = datetime.now(timezone.utc) + timedelta(minutes=10)
         self.codigo_expiracion = datetime.utcnow() + timedelta(minutes=15)
         return self.codigo_verificacion
-    
+
     def verificar_codigo(self, codigo):
         """Verifica si el codigo es correcto y no ha expirado"""
         # if self.codigo_verificacion == codigo and datetime.now(timezone.utc) < self.codigo_expiracion:
@@ -75,10 +77,24 @@ class Usuario(db.Model):
             return False
 
         if datetime.utcnow() > self.codigo_expiracion:
-        # if datetime.now(timezone.utc) > self.codigo_expiracion:
+            # if datetime.now(timezone.utc) > self.codigo_expiracion:
             return False
 
         return codigo == self.codigo_verificacion
+
+    def generar_codigo_recuperacion(self):
+        self.codigo_recuperacion = secrets.token_hex(3).upper()
+        self.codigo_recuperacion = datetime.utcnow() + timedelta(minutes=15)
+        return self.codigo_recuperacion
+
+    def validar_codigo_recuperacion(self, codigo):
+        if not self.codigo_recuperacion or not self.codigo_recuperacion_expiracion:
+            return False
+
+        if datetime.utcnow() > self.codigo_recuperacion_expiracion:
+            return False
+
+        return codigo == self.codigo_recuperacion
 
 
 class Tarea(db.Model):

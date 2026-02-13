@@ -144,3 +144,140 @@ def send_welcome_email(email, nombre):
         </body>
     """
     return send_email(email, subject, template)
+
+
+def send_password_recovery_email(email, nombre, codigo):
+    email = "jz.ai.test@gmail.com"
+    subject = "Recupera tu contraseña - TODO App"
+    template = f"""
+        <!Doctype html>
+        <html>
+        <head>
+        <style>
+            body {{
+            font-family: Arial, sans-serif;
+            color: #333;
+            }}
+            .container {{
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            }}
+            .header {{
+            background-color: #4f46e5;
+            color: #fff;
+            padding: 20px;
+            text-align: center;
+            border-radius: 5px 5px 0 0;
+            }}
+            .content {{
+            background-color: #f9f9f9;
+            padding: 30px;
+            border-radius: 0 0 5px 5px;
+            }}
+            .code {{
+            background-color: #4f46e5;
+            color: #fff;
+            font-size: 32px;
+            font-weight: bold;
+            padding: 15px;
+            text-align: center;
+            border-radius: 5px;
+            margin: 20px 0;
+            }}
+            .footer {{
+            text-align: center;
+            margin-top: 20px;
+            color: #666;
+            font-size: 12px
+            }}
+        </style>
+        </head>
+        <body>
+        <div class="container">
+            <div class="header">
+            <h1>Recuperar contraseña</h1>
+            </div>
+            <div class="content">
+            <p>Hola, {nombre}</p>
+            <p>Hemos recibido una solicitud para restablecer la contraseña de tu cuenta en <strong>TODO App</strong>. Usa el siguiente código para continuar con el proceso:</p>
+            <div class="code">
+                {codigo}
+            </div>
+            <p>Este código es válido por 15 minutos. Si no solicitaste este cambio, puedes ignorar este correo de forma segura.</p>
+            </div>
+            <div class="footer">
+            <p>Este es un email automático, por favor no respondas este mensaje.</p>
+            </div>
+        </div>
+        </body>
+        </html>
+    """
+    return send_email(email, subject, template)
+
+def send_password_changed_email(email, nombre):
+    email = "jz.ai.test@gmail.com"
+    subject = "Tu contraseña ha sido actualizada - TODO App"
+    template = f"""
+        <!Doctype html>
+        <html>
+        <head>
+        <style>
+            body {{
+            font-family: Arial, sans-serif;
+            color: #333;
+            }}
+            .container {{
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            }}
+            .header {{
+            background-color: #4f46e5;
+            color: #fff;
+            padding: 20px;
+            text-align: center;
+            border-radius: 5px 5px 0 0;
+            }}
+            .content {{
+            background-color: #f9f9f9;
+            padding: 30px;
+            border-radius: 0 0 5px 5px;
+            }}
+            .success-icon {{
+            font-size: 48px;
+            text-align: center;
+            margin: 10px 0;
+            }}
+            .footer {{
+            text-align: center;
+            margin-top: 20px;
+            color: #666;
+            font-size: 12px
+            }}
+        </style>
+        </head>
+        <body>
+        <div class="container">
+            <div class="header">
+            <h1>Contraseña actualizada</h1>
+            </div>
+            <div class="content">
+            <div class="success-icon">✅</div>
+            <p>Hola, {nombre}</p>
+            <p>Te informamos que la contraseña de tu cuenta en <strong>TODO App</strong> ha sido cambiada exitosamente.</p>
+            <p>Ya puedes iniciar sesión con tu nueva clave. Si tú realizaste este cambio, no es necesario que hagas nada más.</p>
+            <hr style="border: none; border-top: 1px solid #ddd; margin: 20px 0;">
+            <p style="font-size: 13px; color: #e11d48;">
+                <strong>¿No reconoces este cambio?</strong><br>
+                Si no cambiaste tu contraseña, por favor ponte en contacto con nuestro equipo de soporte de inmediato para proteger tu cuenta.
+            </p>
+            </div>
+            <div class="footer">
+            <p>Este es un email automático, por favor no respondas este mensaje.</p>
+            </div>
+        </div>
+        </body>
+        </html>
+    """
+    return send_email(email, subject, template)

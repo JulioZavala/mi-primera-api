@@ -1,11 +1,17 @@
 from flask import Blueprint, jsonify, request
-from flask_jwt_extended import create_access_token, jwt_required, get_jwt_identity
+from flask_jwt_extended import create_access_token, get_jwt_identity, jwt_required
 from werkzeug.security import check_password_hash, generate_password_hash
 
 from extensions import db
 from models import Usuario
+
 # importar la funcion para enviar el email
-from utils.email import send_welcome_email, send_verification_email
+from utils.email import (
+    send_password_changed_email,
+    send_password_recovery_email,
+    send_verification_email,
+    send_welcome_email,
+)
 
 # crear el BluePrint (bp)
 auth_bp = Blueprint("auth", __name__, url_prefix="/api/auth")
@@ -41,7 +47,7 @@ def registro():
             nombre=payload.get("nombre"),
             email=payload.get("email"),
             password=password_hash,
-            verificado=False
+            verificado=False,
         )
 
         #  crear el codigo de verificacion
@@ -52,17 +58,20 @@ def registro():
 
         # # crear el token
         # access_token = create_access_token(identity=str(nuevo_usuario.id))
-    
+
         # enviar el email de verificacion
-        correo_enviado = send_verification_email(nuevo_usuario.email, nuevo_usuario.nombre, codigo)
-        
+        correo_enviado = send_verification_email(
+            nuevo_usuario.email, nuevo_usuario.nombre, codigo
+        )
+
         if not correo_enviado:
-            return jsonify({
-                'ok': True,
-                'message': 'El usuairo se creo, pero hubo un error al enviar el email de verificación',
-                'data': nuevo_usuario.to_dict(),
-            }), 201
-        
+            return jsonify(
+                {
+                    "ok": True,
+                    "message": "El usuairo se creo, pero hubo un error al enviar el email de verificación",
+                    "data": nuevo_usuario.to_dict(),
+                }
+            ), 201
 
         return jsonify(
             {
@@ -76,28 +85,31 @@ def registro():
         return jsonify({"ok": False, "message": str(e)}), 500
 
 
-
-@auth_bp.route('/verificar-email', methods=['POST'])
+@auth_bp.route("/verificar-email", methods=["POST"])
 def verificar_email():
     try:
         payload = request.get_json()
 
-        if not payload.get('email'):
-            return jsonify({'ok': False, 'message': 'El email es requerido'}), 400
-        if not payload.get('codigo'):
-            return jsonify({'ok': False, 'message': 'El codigo es requerido'}), 400
+        if not payload.get("email"):
+            return jsonify({"ok": False, "message": "El email es requerido"}), 400
+        if not payload.get("codigo"):
+            return jsonify({"ok": False, "message": "El codigo es requerido"}), 400
 
         # buscar al usuario por correo
-        usuario = Usuario.query.filter_by(email=payload.get('email')).first()
+        usuario = Usuario.query.filter_by(email=payload.get("email")).first()
 
         if not usuario:
-            return jsonify({'ok': False, 'message': 'El usuario no existe'}), 400
+            return jsonify({"ok": False, "message": "El usuario no existe"}), 400
 
         if usuario.verificado:
-            return jsonify({'ok': False, 'message': 'El usuario ya fue verificado!'}), 400
+            return jsonify(
+                {"ok": False, "message": "El usuario ya fue verificado!"}
+            ), 400
 
-        if not usuario.verificar_codigo(payload.get('codigo')):
-            return jsonify({'ok': False, 'message': 'Codigo expirado o incorrecto!'}), 400
+        if not usuario.verificar_codigo(payload.get("codigo")):
+            return jsonify(
+                {"ok": False, "message": "Codigo expirado o incorrecto!"}
+            ), 400
 
         usuario.verificado = True
         usuario.codigo_verificacion = None
@@ -110,54 +122,49 @@ def verificar_email():
 
         access_token = create_access_token(identity=str(usuario.id))
 
-        return jsonify({
-            'ok': True,
-            'message': 'Usuario verificado!',
-            'data': usuario.to_dict(),
-            'access_token': access_token
-        })
+        return jsonify(
+            {
+                "ok": True,
+                "message": "Usuario verificado!",
+                "data": usuario.to_dict(),
+                "access_token": access_token,
+            }
+        )
     except Exception as e:
-        return jsonify({'ok': False, 'message': str(e)}), 500
+        return jsonify({"ok": False, "message": str(e)}), 500
 
 
-@auth_bp.route('/reenviar-codigo', methods=['POST'])
+@auth_bp.route("/reenviar-codigo", methods=["POST"])
 def reenviar_codigo():
     try:
         payload = request.get_json()
 
-        if not payload.get('email'):
-            return jsonify({'ok': False, 'message': 'El email es requerido'}), 400
+        if not payload.get("email"):
+            return jsonify({"ok": False, "message": "El email es requerido"}), 400
 
-        usuario = Usuario.query.filter_by(email=payload.get('email')).first()
+        usuario = Usuario.query.filter_by(email=payload.get("email")).first()
 
         if not usuario:
-            return jsonify({'ok': False, 'message': 'El usuario no existe'}), 400
+            return jsonify({"ok": False, "message": "El usuario no existe"}), 400
 
         # verifica si ya esta verificado
         if usuario.verificado:
-            return jsonify({'ok': False, 'message': 'El usuario ya esta verificado!'})
+            return jsonify({"ok": False, "message": "El usuario ya esta verificado!"})
 
         # generar un NUEVO codigo
         codigo = usuario.generar_codigo_verificacion()
         db.session.commit()
 
         # enviar el email
-        email_enviado = send_verification_email(
-            usuario.email,
-            usuario.nombre,
-            codigo
-        )
+        email_enviado = send_verification_email(usuario.email, usuario.nombre, codigo)
 
         if not email_enviado:
-            return jsonify({'ok': False, 'message': 'Error al enviar el email'}), 500
+            return jsonify({"ok": False, "message": "Error al enviar el email"}), 500
 
-        return jsonify({
-            'ok': True,
-            'message': 'Codigo enviado exitosamente'
-        })
+        return jsonify({"ok": True, "message": "Codigo enviado exitosamente"})
     except Exception as e:
         print(e)
-        return jsonify({'ok': False, 'message': str(e)}), 500
+        return jsonify({"ok": False, "message": str(e)}), 500
 
 
 @auth_bp.route("/login", methods=["POST"])
@@ -196,43 +203,132 @@ def login():
         return jsonify({"ok": False, "message": str(e)}), 500
 
 
-@auth_bp.route('/cambiar-password', methods=['PUT'])
+@auth_bp.route("/cambiar-password", methods=["PUT"])
 @jwt_required()
 def cambiar_password():
     try:
         usuario_id = int(get_jwt_identity())
         payload = request.get_json()
 
-        if not payload.get('password_actual'):
-            return jsonify({'ok': False, 'message': 'El password actual es requerido'}), 400
+        if not payload.get("password_actual"):
+            return jsonify(
+                {"ok": False, "message": "El password actual es requerido"}
+            ), 400
 
-        if not payload.get('password_nuevo'):
-            return jsonify({'ok': False, 'message': 'El password nuevo es requerido'}), 400
+        if not payload.get("password_nuevo"):
+            return jsonify(
+                {"ok": False, "message": "El password nuevo es requerido"}
+            ), 400
 
-        if not payload.get('password_confirmacion'):
-            return jsonify({'ok': False, 'message': 'El password de conformación es requerido'}), 400
+        if not payload.get("password_confirmacion"):
+            return jsonify(
+                {"ok": False, "message": "El password de conformación es requerido"}
+            ), 400
 
         # validar min 6 caracteres
-        if len(payload.get('password_nuevo')) < 6:
-            return jsonify({'ok': False, 'message': 'El password debe tener como minímo 6 caracteres'}), 400
+        if len(payload.get("password_nuevo")) < 6:
+            return jsonify(
+                {
+                    "ok": False,
+                    "message": "El password debe tener como minímo 6 caracteres",
+                }
+            ), 400
 
-        if payload.get('password_nuevo') == payload.get('password_actual'):
-            return jsonify({'ok': False, 'message': 'El password nuevo debe ser diferente al actual'}), 400
+        if payload.get("password_nuevo") == payload.get("password_actual"):
+            return jsonify(
+                {
+                    "ok": False,
+                    "message": "El password nuevo debe ser diferente al actual",
+                }
+            ), 400
 
-        if payload.get('password_nuevo') != payload.get('password_confirmacion'):
-            return jsonify({'ok': False, 'message': 'El password nuevo y confirmación no coinciden'}), 400
+        if payload.get("password_nuevo") != payload.get("password_confirmacion"):
+            return jsonify(
+                {
+                    "ok": False,
+                    "message": "El password nuevo y confirmación no coinciden",
+                }
+            ), 400
 
         usuario = Usuario.query.get(usuario_id)
 
         if not usuario:
-            return jsonify({'ok': False, 'message': 'Usuario no encontrado'}), 400
+            return jsonify({"ok": False, "message": "Usuario no encontrado"}), 400
 
-        if not check_password_hash(usuario.password, payload.get('password_actual')):
-            return jsonify({'ok': False, 'message': 'El password actual es incorrecto'}), 400
+        if not check_password_hash(usuario.password, payload.get("password_actual")):
+            return jsonify(
+                {"ok": False, "message": "El password actual es incorrecto"}
+            ), 400
 
-        usuario.password = generate_password_hash(payload.get('password_nuevo'))
+        usuario.password = generate_password_hash(payload.get("password_nuevo"))
         db.session.commit()
 
-        return jsonify({'ok': True, 'message': 'Password actualizado!'})
+        return jsonify({"ok": True, "message": "Password actualizado!"})
     except Exception as e:
-        return jsonify({'ok': False, 'message': str(e)}), 500
+        return jsonify({"ok": False, "message": str(e)}), 500
+
+
+@auth_bp.route("/solicitar-recuperacion", methods=["POST"])
+def solicitar_recuperacion():
+    try:
+        payload = request.get_json()
+
+        if not payload.get("email"):
+            return jsonify({"ok": False, "message": "El email es requerido"}), 400
+
+        usuario = Usuario.query.filter_by(email=payload.get("email")).first()
+
+        if not usuario:
+            return jsonify(
+                {"ok": True, "message": "Se envio el codigo al correo registrado."}
+            )
+
+        codigo = usuario.generar_codigo_recuperacion()
+        db.session.commit()
+
+        email_enviado = send_password_recovery_email(usuario.nombre, codigo)
+        print(email_enviado)
+
+        return jsonify(
+            {"ok": True, "message": "Se envio el codigo al correo registrado."}
+        )
+    except Exception as e:
+        return jsonify({"ok": False, "message": str(e)}), 500
+
+
+@auth_bp.route("/restablecer-password", methods=["POST"])
+def restablecer_password():
+    try:
+        payload = request.get_json()
+
+        if not payload.get("email"):
+            return jsonify({"ok": False, "message": "El email es requerido"}), 400
+
+        if not payload.get("codigo"):
+            return jsonify({"ok": False, "message": "El codigo es requerido"}), 400
+
+        if not payload.get("password_nuevo"):
+            return jsonify({"ok": False, "message": "El password es requerido"}), 400
+
+        usuario = Usuario.query.filter_by(email=payload.get("email")).first()
+
+        if not usuario:
+            return jsonify({"ok": False, "message": "Error en el usuario"}), 400
+
+        if not usuario.validar_codigo_recuperacion(payload.get("codigo")):
+            return jsonify({"ok": False, "message": "Error en el codigo"}), 400
+
+        usuario.password = generate_password_hash(payload.get("password_nuevo"))
+        # limpiamos los valores de recuperacon
+        usuario.codigo_recuperacion = None
+        usuario.codigo_recuperacion_expiracion = None
+        # enviamos el correo de confirmación!
+        send_password_changed_email(usuario.email, usuario.nombre)
+
+        db.session.commit()
+
+        return jsonify(
+            {"ok": True, "message": "Usuario actualizado", "data": usuario.to_dict()}
+        )
+    except Exception as e:
+        return jsonify({"ok": False, "message": str(e)}), 500
