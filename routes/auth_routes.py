@@ -286,7 +286,9 @@ def solicitar_recuperacion():
         codigo = usuario.generar_codigo_recuperacion()
         db.session.commit()
 
-        email_enviado = send_password_recovery_email(usuario.nombre, codigo)
+        email_enviado = send_password_recovery_email(
+            usuario.email, usuario.nombre, codigo
+        )
         print(email_enviado)
 
         return jsonify(
